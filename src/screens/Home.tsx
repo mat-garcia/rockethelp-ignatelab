@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { VStack, HStack, IconButton, useTheme, Text, Heading, FlatList, Center } from 'native-base';
 import { SignOut , ChatTeardropText} from 'phosphor-react-native';
 
@@ -13,7 +14,7 @@ export function Home() {
     //seta o filtro selecionado pelo usuario - <> define o valor padrao no useState
     const [statusSelected, setStatusSelected] = useState<'open' | 'closed'>('open');
 
-    const [orders, setOrders] = useState<OrderProps[]>([/* {
+    const [orders, setOrders] = useState<OrderProps[]>([{
         id: '123',
         patrimony: '13556',
         when: '21/07/2022 às 10:00',
@@ -25,17 +26,17 @@ export function Home() {
         status: 'open'
     },
     {
-        id: '124',
-        patrimony: '13557',
+        id: '125',
+        patrimony: '13558',
         when: '21/07/2022 às 10:00',
         status: 'open'
     },
     {
-        id: '124',
-        patrimony: '13557',
+        id: '126',
+        patrimony: '1359',
         when: '21/07/2022 às 10:00',
         status: 'open'
-    },
+    }/*,
     {
         id: '124',
         patrimony: '13557',
@@ -63,8 +64,19 @@ export function Home() {
 
 ]);
 
-
+    const navigation = useNavigation();
     const {colors} = useTheme();
+    
+    //navegação para a tela de cadastro de nova solicitação
+    function handeNewOrder() {
+        navigation.navigate('new');
+
+    }
+    //navegação para a tela de detalhes de uma solicitação
+    function handleDetails(orderId: string) {
+        navigation.navigate('details', { orderId });
+    }
+
   return (
     <VStack flex={1} pb={6} bg="gray.700">
         <HStack 
@@ -82,10 +94,10 @@ export function Home() {
         <VStack flex={1} px={6}>
             <HStack w="full" mt={8} mb={4} justifyContent="space-between" alignItems="center">
                 <Heading color="gray.100">
-                    Meus chamados
+                    Solicitações
                 </Heading>
                 <Text color="gray.200">
-                    3
+                    {orders.length}
                 </Text>
             </HStack>
 
@@ -100,7 +112,7 @@ export function Home() {
                 //_contentContainerStyle estiliza o interior da flat list */}
             <FlatList data={orders}
             keyExtractor={item => item.id}
-            renderItem={({item}) => <Order data={item}/>}
+            renderItem={({item}) => <Order data={item} onPress={() => handleDetails(item.id)}/>}
             showsVerticalScrollIndicator={false}
             _contentContainerStyle={{paddingBottom: 100}}
             ListEmptyComponent={() => (
@@ -113,7 +125,7 @@ export function Home() {
                 </Center>
             )}/>
 
-            <Button title="Novo chamado" />
+            <Button title="Novo chamado" onPress={handeNewOrder}/>
 
         </VStack>
     </VStack>
