@@ -1,68 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Alert } from 'react-native'; 
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { VStack, HStack, IconButton, useTheme, Text, Heading, FlatList, Center } from 'native-base';
 import { SignOut , ChatTeardropText} from 'phosphor-react-native';
 
+import { dateFormat } from '../utils/firestoreDateFormat';
 
 import Logo from '../assets/logo_secondary.svg';
 
 import { Filter } from '../components/Filter';
-import { Order , OrderProps} from '../components/Order';
 import { Button } from '../components/Button';
+import { Order , OrderProps} from '../components/Order';
+import { Loading } from '../components/Loading';
+
 
 export function Home() {
+    const [isLoading, setIsLoading] = useState(true);
     //seta o filtro selecionado pelo usuario - <> define o valor padrao no useState
     const [statusSelected, setStatusSelected] = useState<'open' | 'closed'>('open');
-
-    const [orders, setOrders] = useState<OrderProps[]>([{
-        id: '123',
-        patrimony: '13556',
-        when: '21/07/2022 às 10:00',
-        status: 'open'
-    },{
-        id: '124',
-        patrimony: '13557',
-        when: '21/07/2022 às 10:00',
-        status: 'open'
-    },
-    {
-        id: '125',
-        patrimony: '13558',
-        when: '21/07/2022 às 10:00',
-        status: 'open'
-    },
-    {
-        id: '126',
-        patrimony: '1359',
-        when: '21/07/2022 às 10:00',
-        status: 'open'
-    }/*,
-    {
-        id: '124',
-        patrimony: '13557',
-        when: '21/07/2022 às 10:00',
-        status: 'open'
-    },
-    {
-        id: '124',
-        patrimony: '13557',
-        when: '21/07/2022 às 10:00',
-        status: 'open'
-    },
-    {
-        id: '124',
-        patrimony: '13557',
-        when: '21/07/2022 às 10:00',
-        status: 'open'
-    },
-    {
-        id: '124',
-        patrimony: '13557',
-        when: '21/07/2022 às 10:00',
-        status: 'open'
-    } */
-
-]);
+    const [orders, setOrders] = useState<OrderProps[]>([]);
 
     const navigation = useNavigation();
     const {colors} = useTheme();
@@ -77,6 +35,40 @@ export function Home() {
         navigation.navigate('details', { orderId });
     }
 
+    //fazer logout
+    function handleLogout(){
+        auth()
+        .signOut()
+        .catch(error => {
+            console.log(error);
+            return Alert.alert('Sair', 'Ocorreu um erro ao fazer logout');
+        })
+    }
+
+    //carrega as solicitações do banco de dados
+    useEffect(() => {
+        setIsLoading(true);
+
+        const subscriber = firestore()
+        .collection('orders')
+        .where('status', '==', statusSelected)
+        .onSnapshot(snapshot => {
+            const data = snapshot.docs.map(doc => {
+                const { patrimony, description, status, created_at } = doc.data();
+                return {
+                    id: doc.id,
+                    patrimony,
+                    description,
+                    status,
+                    when: dateFormat(created_at)
+                }
+            })
+            setOrders(data);
+            setIsLoading(false);
+        })
+        
+    }, [statusSelected]);
+
   return (
     <VStack flex={1} pb={6} bg="gray.700">
         <HStack 
@@ -89,7 +81,7 @@ export function Home() {
         px={6}
         >
         <Logo/>
-        <IconButton icon={<SignOut size={26} color={colors.gray[300]} />}/>
+        <IconButton onPress={handleLogout} icon={<SignOut size={26} color={colors.gray[300]} />}/>
         </HStack>
         <VStack flex={1} px={6}>
             <HStack w="full" mt={8} mb={4} justifyContent="space-between" alignItems="center">
@@ -110,7 +102,7 @@ export function Home() {
             {/* LISTA DE CHAMADOS
                 //listEmpty mostra um component caso lista esteja vazia
                 //_contentContainerStyle estiliza o interior da flat list */}
-            <FlatList data={orders}
+            {isLoading ? <Loading/> : <FlatList data={orders}
             keyExtractor={item => item.id}
             renderItem={({item}) => <Order data={item} onPress={() => handleDetails(item.id)}/>}
             showsVerticalScrollIndicator={false}
@@ -123,7 +115,7 @@ export function Home() {
                     solicitações {statusSelected === 'open' ? 'em andamento' : 'finalizadas'}
                     </Text>
                 </Center>
-            )}/>
+            )}/>}
 
             <Button title="Novo chamado" onPress={handeNewOrder}/>
 
